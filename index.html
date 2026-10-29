@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TelApp - Mobile Video Streaming & Reels</title>
+    <meta name="description" content="TelApp: Mobile video streaming, reels, live stream discovery and creator community." />
+    <link rel="icon" type="image/png" href="/assets/aistudio/image_23f1ad3d.png" />
+    <link rel="apple-touch-icon" href="/assets/aistudio/image_23f1ad3d.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#6c5ce7" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta property="og:title" content="TelApp - Mobile Video Streaming & Reels" />
+    <meta property="og:description" content="Watch high-speed reels, live streams, and connect with verified creators on TelApp." />
+    <meta property="og:image" content="/assets/aistudio/image_23f1ad3d.png" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content="/assets/aistudio/image_23f1ad3d.png" />
+  </head>
+  <body class="bg-[#0b0914] text-white select-none">
+    <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    </script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

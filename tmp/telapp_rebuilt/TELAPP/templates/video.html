@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- DYNAMIC BINDING: Page Title & Meta -->
+  <title>{{ page_title | default('TelApp - Next-Gen Video Streaming Platform') }}</title>
+  <meta name="description" content="{{ meta_description | default('High-density mobile video streaming platform scaled for millions of concurrent users.') }}">
+  <meta name="theme-color" content="#0b0914">
+
+  <!-- Production-grade Master CSS Built on Native CSS Custom Properties -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/telapp-stream.css') | default('/static/css/telapp-stream.css') }}">
+</head>
+<body>
+  <!-- =====================================================================
+       TELAPP STREAMING PLATFORM - MOBILE VIEWPORT SHELL
+       Scale resilient envelope designed for high concurrency & safe margins
+       ===================================================================== -->
+  <div class="telapp-viewport" id="telapp-root" role="application" aria-label="TelApp Streaming Client">
+
+    <!-- ===================================================================
+         VIEW 1: DISCOVERY ENGINE
+         =================================================================== -->
+    <section class="view-content-wrapper" id="view-discovery" aria-label="Discovery Engine">
+      
+      <!-- Utility Header Layout -->
+      <header class="discovery-header">
+        <div class="header-left-cluster">
+          <!-- DYNAMIC BINDING: Current User Avatar & Profile Link -->
+          <a href="{{ url_for('profile', user_id=current_user.id) | default('#profile') }}" class="user-avatar-ring gpu-tap" aria-label="User profile of {{ current_user.username | default('current user') }}">
+            <!-- DYNAMIC BINDING: Avatar Image URL -->
+            <img src="{{ current_user.avatar | default('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150') }}" 
+                 alt="{{ current_user.username | default('User') }} avatar" 
+                 loading="lazy">
+          </a>
+          <span class="brand-title">TelApp</span>
+        </div>
+
+        <div class="header-utility-actions">
+          <!-- Contextual Search Icon Button -->
+          <button type="button" class="utility-icon-btn gpu-tap" aria-label="Search media catalog" onclick="handleSearchClick()">
+            <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+            </svg>
+          </button>
+
+          <!-- Notification Utility Button with Absolute-Positioned Badge -->
+          <button type="button" class="utility-icon-btn gpu-tap" aria-label="View notifications, {{ unread_notifications_count | default(3) }} unread alerts" onclick="handleNotificationClick()">
+            <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
+            </svg>
+            <!-- DYNAMIC BINDING: Unread Notifications Count (Omitted if 0) -->
+            {% if unread_notifications_count | default(3) > 0 %}
+            <span class="notification-badge" aria-hidden="true">{{ unread_notifications_count | default(3) }}</span>
+            {% endif %}
+          </button>
+        </div>
+      </header>
+
+      <!-- Horizontally Scrollable Filter Row (Scroll Snap) -->
+      <nav class="category-filter-row" aria-label="Media category filters">
+        <!-- DYNAMIC BINDING: Category Filters Loop -->
+        {% for category in categories | default(['All', 'Trending', 'Live Streams', 'Gaming', 'Music & Beats', 'Cinematic', 'Documentaries', 'Shorts', 'Tech & Code']) %}
+        <button type="button" 
+                class="filter-pill gpu-tap {% if loop.first or category == active_category | default('All') %}is-active{% endif %}" 
+                role="tab"
+                aria-selected="{% if loop.first or category == active_category | default('All') %}true{% else %}false{% endif %}"
+                onclick="handleCategorySelect(this, '{{ category }}')">
+          {{ category }}
+        </button>
+        {% endfor %}
+      </nav>
+
+      <!-- Grid-Based Media Cards -->
+      <main class="media-discovery-grid" role="region" aria-label="Video catalog stream">
+        <!-- DYNAMIC BINDING: Media Video Cards Loop -->
+        {% for video in videos | default([
+          {'id': 101, 'duration': '1h 50m', 'is_live': false, 'title': 'Cyber Odyssey: The Neon Horizon Part IV', 'username': 'neon_director', 'views': '2.4M', 'thumbnail': 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=600'},
+          {'id': 102, 'duration': '42m 10s', 'is_live': true, 'title': 'Live Synthesizer Jam: Midnight Lo-Fi Signals', 'username': 'synth_master', 'views': '18.9K watching', 'thumbnail': 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600'},
+          {'id': 103, 'duration': '2h 15m', 'is_live': false, 'title': 'Deep Sea Bioluminescence Exploration in 4K', 'username': 'ocean_chronicles', 'views': '840K', 'thumbnail': 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600'},
+          {'id': 104, 'duration': '28m 45s', 'is_live': false, 'title': 'Speedrunning Quantum Core Architecture', 'username': 'code_runner', 'views': '312K', 'thumbnail': 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600'}
+        ]) %}
+        <article class="media-card gpu-hover gpu-tap" data-video-id="{{ video.id }}">
+          <div class="media-card-thumbnail-wrap">
+            <!-- DYNAMIC BINDING: Media Thumbnail -->
+            <img class="media-card-thumbnail" 
+                 src="{{ video.thumbnail | default('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600') }}" 
+                 alt="{{ video.title | default('Video stream thumbnail') }}" 
+                 loading="lazy">
+            
+            <!-- Conditional Live Indicator Badge -->
+            {% if video.is_live %}
+            <span class="live-indicator-badge" aria-label="Live Stream Broadcast">Live</span>
+            {% endif %}
+
+            <!-- Absolute-Positioned Duration Badge -->
+            <span class="duration-badge" aria-label="Duration {{ video.duration | default('1h 50m') }}">{{ video.duration | default('1h 50m') }}</span>
+          </div>
+
+          <!-- Safe-Area Text Region (Guaranteed Truncation & No Bounds Break) -->
+          <div class="media-card-info-safe-region">
+            <h2 class="media-card-title truncate-text" title="{{ video.title | default('Stream Title') }}">
+              {{ video.title | default('Stream Title') }}
+            </h2>
+            <div class="media-card-meta">
+              <span class="media-card-creator truncate-text">@{{ video.username | default('creator') }}</span>
+              <span class="truncate-text" style="flex-shrink: 0;">{{ video.views | default('120K') }}</span>
+            </div>
+          </div>
+        </article>
+        {% endfor %}
+      </main>
+
+    </section>
+
+    <!-- ===================================================================
+         VIEW 2: CURATED SPOTLIGHT PLATFORM
+         =================================================================== -->
+    <section class="view-content-wrapper" id="view-spotlight" aria-label="Curated Spotlight Platform" style="display: none;">
+      
+      <!-- Sticky Frosted-Glass Navigation Bar -->
+      <nav class="spotlight-top-nav" aria-label="Spotlight navigation">
+        <span class="spotlight-nav-title">Spotlight Premiere</span>
+        <div class="header-utility-actions">
+          <button type="button" class="utility-icon-btn gpu-tap" aria-label="Filter spotlight genres">
+            <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/>
+            </svg>
+          </button>
+        </div>
+      </nav>
+
+      <!-- Centered Marquee Spotlight Container -->
+      <div class="spotlight-container">
+        <!-- DYNAMIC BINDING: Spotlight Backdrop Image / Poster -->
+        <img class="spotlight-backdrop" 
+             src="{{ spotlight.backdrop_url | default('https://images.unsplash.com/photo-1578632767115-351597cf2477?w=1200') }}" 
+             alt="{{ spotlight.title | default('Cyber Odyssey 2099') }} backdrop">
+        <div class="spotlight-scrim" aria-hidden="true"></div>
+
+        <div class="spotlight-content">
+          <!-- DYNAMIC BINDING: Spotlight Tag Badge -->
+          <span class="spotlight-tag-badge">{{ spotlight.badge | default('Exclusive Premiere') }}</span>
+          
+          <!-- High-Contrast Title with Heavy Text-Shadow Masks -->
+          <h1 class="spotlight-title-marquee line-clamp-2">
+            {{ spotlight.title | default('Cyber Odyssey 2099: The Neon Veil') }}
+          </h1>
+
+          <!-- DYNAMIC BINDING: Alphanumeric Metadata Row -->
+          <div class="spotlight-metadata-row" aria-label="Feature metadata">
+            <span class="spotlight-meta-chip">{{ spotlight.rating | default('98% Match') }}</span>
+            <span class="spotlight-meta-chip">{{ spotlight.duration | default('2h 14m') }}</span>
+            <span class="spotlight-meta-chip">{{ spotlight.quality | default('4K UHD') }}</span>
+            <span class="spotlight-meta-chip">{{ spotlight.audio | default('Dolby 5.1') }}</span>
+          </div>
+
+          <!-- DYNAMIC BINDING: Synopsis Description -->
+          <p class="spotlight-synopsis line-clamp-2">
+            {{ spotlight.synopsis | default('Deep within the neural sprawling slums of New Kyoto, an outlaw code-breaker unearths a dormant broadcast protocol capable of disrupting the mega-corporations.') }}
+          </p>
+
+          <!-- Interactive Action CTA Buttons -->
+          <div class="spotlight-actions-row">
+            <button type="button" class="spotlight-btn-primary gpu-tap" onclick="playSpotlightMedia()">
+              <svg aria-hidden="true" fill="currentColor" viewBox="0 0 24 24" style="width: 1.25rem; height: 1.25rem;">
+                <path d="M8 5v14l11-7z"/>
+              </svg>
+              <span>Play Premiere</span>
+            </button>
+            <button type="button" class="spotlight-btn-secondary gpu-tap" aria-label="Add to Watchlist" onclick="toggleWatchlist(this)">
+              <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.25rem; height: 1.25rem;">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+              </svg>
+              <span>Watchlist</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Curated Horizontal Rail -->
+      <section class="spotlight-rail-section">
+        <div class="section-headline">
+          <h3>Curated by Editors</h3>
+          <a href="#curated-all" class="gpu-tap">View All</a>
+        </div>
+        <div class="horizontal-media-rail">
+          <!-- DYNAMIC BINDING: Curated Rail Loop -->
+          {% for item in curated_items | default([
+            {'title': 'Solaris Orbit', 'thumb': 'https://images.unsplash.com/photo-1506703719100-a0f3a48c0f86?w=400'},
+            {'title': 'Nightrunner Drift', 'thumb': 'https://images.unsplash.com/photo-1508739773434-c26b3d09e071?w=400'},
+            {'title': 'Void Signal', 'thumb': 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400'},
+            {'title': 'Biolume Depths', 'thumb': 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400'}
+          ]) %}
+          <div class="curated-rail-card gpu-tap" onclick="selectCurated('{{ item.title }}')">
+            <div class="curated-rail-thumb">
+              <img src="{{ item.thumb }}" alt="{{ item.title }}" loading="lazy">
+            </div>
+            <div style="padding: 0.5rem;">
+              <span class="truncate-text" style="font-size: var(--font-xs); font-weight: var(--font-weight-medium); color: var(--text-primary);">{{ item.title }}</span>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </section>
+
+    </section>
+
+    <!-- ===================================================================
+         VIEW 3: DYNAMIC MEDIA HUB & FEED
+         =================================================================== -->
+    <section class="view-content-wrapper" id="view-media-feed" aria-label="Dynamic Media Hub and Feed" style="display: none;">
+      
+      <!-- Clean Video-Player Context Envelope -->
+      <div class="player-context-envelope" role="region" aria-label="Active video player">
+        <!-- DYNAMIC BINDING: Active Video Player Source -->
+        <video id="telapp-main-video" 
+               class="player-video-element" 
+               src="{{ active_video.video_url | default('https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4') }}" 
+               poster="{{ active_video.poster | default('https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=800') }}"
+               playsinline 
+               controlsList="nodownload" 
+               preload="metadata"></video>
+        <div class="player-overlay-gradient"></div>
+
+        <div class="player-top-indicators">
+          <span class="stream-quality-tag">{{ active_video.quality_tag | default('4K 60FPS • LIVE') }}</span>
+          <button type="button" class="utility-icon-btn gpu-tap" style="width: 2rem; height: 2rem; background: rgba(0,0,0,0.6);" aria-label="Player settings">
+            <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.093c.55 0 1.02.398 1.11.94l.149.894c.07.424.384.764.78.93.398.164.855.142 1.205-.108l.737-.527a1.125 1.125 0 011.45.12l.773.774c.39.389.44 1.002.12 1.45l-.527.737c-.25.35-.272.806-.107 1.204.165.397.505.71.93.78l.893.15c.543.09.94.56.94 1.109v1.094c0 .55-.397 1.02-.94 1.11l-.893.149c-.425.07-.765.383-.93.78-.165.398-.143.854.107 1.204l.527.738c.32.447.269 1.06-.12 1.45l-.774.773a1.125 1.125 0 01-1.449.12l-.738-.527c-.35-.25-.806-.272-1.203-.107-.397.165-.71.505-.781.929l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.019-.398-1.11-.94l-.148-.894c-.071-.424-.384-.764-.781-.93-.398-.164-.854-.142-1.204.108l-.738.527c-.447.32-1.06.269-1.45-.12l-.773-.774a1.125 1.125 0 01-.12-1.45l.527-.737c.25-.35.273-.806.108-1.204-.165-.397-.505-.71-.93-.78l-.894-.15c-.542-.09-.94-.56-.94-1.109v-1.094c0-.55.398-1.02.94-1.11l.894-.149c.424-.07.765-.383.93-.78.165-.398.143-.854-.108-1.204l-.526-.738a1.125 1.125 0 01.12-1.45l.773-.773a1.125 1.125 0 011.45-.12l.737.527c.35.25.807.272 1.204.107.397-.165.71-.505.78-.929l.15-.894z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="player-controls-bottom">
+          <span id="player-time-display">04:18 / 18:40</span>
+          <button type="button" class="gpu-tap" aria-label="Toggle Fullscreen" onclick="toggleFullscreen()">
+            <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="width: 1.125rem; height: 1.125rem;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="player-progress-bar-wrap" aria-hidden="true">
+          <div class="player-progress-fill"></div>
+        </div>
+      </div>
+
+      <!-- Active Media Header Info -->
+      <div class="media-header-info">
+        <h1 class="media-active-title line-clamp-2">
+          {{ active_video.title | default('Echoes of the Void: Episode 04 - Gravitational Fracture') }}
+        </h1>
+        <div class="media-active-stats">
+          <span>{{ active_video.views | default('1.4M views') }}</span>
+          <span>•</span>
+          <time datetime="{{ active_video.created_at_iso | default('2026-10-25') }}">{{ active_video.created_at_human | default('3 days ago') }}</time>
+          <span>•</span>
+          <span class="meta-chip-sm">{{ active_video.category | default('Sci-Fi') }}</span>
+        </div>
+      </div>
+
+      <!-- Flat Semantic Engagement Row: Accessible Dual-State Buttons -->
+      <div class="engagement-action-row" role="group" aria-label="Media engagement tools">
+        <!-- Dual-State Button 1: Like with metric counter -->
+        <button type="button" 
+                class="engagement-btn like-btn gpu-tap" 
+                id="btn-like-action"
+                aria-pressed="{{ active_video.is_liked | default('false') }}" 
+                aria-label="Like this video, {{ active_video.likes | default('142K') }} likes" 
+                onclick="handleLikeToggle(this)">
+          <svg aria-hidden="true" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+          </svg>
+          <span class="metric-counter" id="like-metric-text">{{ active_video.likes | default('142K') }}</span>
+        </button>
+
+        <!-- Dual-State Button 2: Dislike Flag -->
+        <button type="button" 
+                class="engagement-btn dislike-btn gpu-tap" 
+                id="btn-dislike-action"
+                aria-pressed="{{ active_video.is_disliked | default('false') }}" 
+                aria-label="Dislike this video" 
+                onclick="handleDislikeToggle(this)">
+          <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3l1.664 1.664M21 21l-1.5-1.5m-5.85-5.85A6.974 6.974 0 0012 13.5c-3.866 0-7-3.134-7-7 0-.584.072-1.15.207-1.691m11.95 11.95A6.973 6.973 0 0019 6.5c0-.493-.052-.973-.15-1.436M9.88 9.88A3 3 0 1014.12 14.12"/>
+          </svg>
+          <span>Dislike</span>
+        </button>
+
+        <!-- Dual-State Button 3: Share Action -->
+        <button type="button" 
+                class="engagement-btn share-btn gpu-tap" 
+                aria-label="Share video link" 
+                onclick="handleShareAction()">
+          <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/>
+          </svg>
+          <span>Share</span>
+        </button>
+
+        <!-- Dual-State Button 4: Snippet Clip -->
+        <button type="button" 
+                class="engagement-btn clip-btn gpu-tap" 
+                id="btn-clip-action"
+                aria-pressed="false" 
+                aria-label="Clip video snippet for highlights" 
+                onclick="handleClipAction(this)">
+          <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7.848 8.25l1.536.887M7.848 8.25a3 3 0 11-5.196-3 3 3 0 015.196 3zm1.536.887a2.165 2.165 0 011.083 1.846v.034m0 0a2.165 2.165 0 01-1.083 1.846l-1.536.887m0 0a3 3 0 11-5.196 3 3 3 0 015.196-3m1.536-.887l7.536-4.35m0 0a3 3 0 115.196-3 3 3 0 01-5.196 3zm0 0L9.384 10.983"/>
+          </svg>
+          <span>Clip</span>
+        </button>
+      </div>
+
+      <!-- Channel Strip Envelope -->
+      <div class="channel-strip">
+        <div class="channel-info-cluster">
+          <img class="channel-avatar" 
+               src="{{ active_video.author.avatar | default('https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150') }}" 
+               alt="{{ active_video.author.username | default('Creator') }} profile">
+          <div class="channel-identity">
+            <div class="channel-name-badge">
+              <span class="truncate-text">{{ active_video.author.username | default('AetherStream Studios') }}</span>
+              <!-- Verified Badge Icon -->
+              {% if active_video.author.is_verified | default(True) %}
+              <svg class="verified-badge-icon" aria-label="Verified Creator" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd"/>
+              </svg>
+              {% endif %}
+            </div>
+            <span class="channel-subs">{{ active_video.author.subscribers | default('2.8M subscribers') }}</span>
+          </div>
+        </div>
+
+        <button type="button" 
+                class="channel-follow-btn gpu-tap" 
+                aria-pressed="{{ active_video.is_following | default('false') }}" 
+                onclick="handleFollowToggle(this)">
+          {{ 'Following' if active_video.is_following | default(False) else 'Subscribe' }}
+        </button>
+      </div>
+
+      <!-- Strict Vertical List: .next-play-feed (High-Density Rows) -->
+      <section class="next-play-feed-section" aria-label="Up next queue">
+        <h2 class="feed-header-label">Up Next in Queue</h2>
+        <ol class="next-play-feed">
+          <!-- DYNAMIC BINDING: Next-Play Feed Videos Loop -->
+          {% for item in next_feed_videos | default([
+            {'id': 201, 'duration': '14:32', 'title': 'Sub-Zero Quantum Drift: Engine Breakdown', 'author': '@quantum_drift', 'views': '490K views', 'tags': ['4K HDR', 'Sci-Fi'], 'thumb': 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400'},
+            {'id': 202, 'duration': '22:15', 'title': 'Neuro-Link Hardware teardown & Reverse Engineering', 'author': '@hardware_forge', 'views': '1.1M views', 'tags': ['Tech', 'Deep Dive'], 'thumb': 'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400'},
+            {'id': 203, 'duration': '08:50', 'title': 'Orbital Station Alpha: Solar Flare Emergency Drill', 'author': '@orbital_ops', 'views': '780K views', 'tags': ['Simulation', 'Space'], 'thumb': 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=400'},
+            {'id': 204, 'duration': '31:04', 'title': 'Architecting Distributed Video Engines at Hyperscale', 'author': '@system_scale', 'views': '295K views', 'tags': ['Scale', 'Cloud'], 'thumb': 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?w=400'}
+          ]) %}
+          <li class="next-play-row gpu-tap" onclick="switchActiveMedia('{{ item.id }}')">
+            <!-- Thumbnail with Absolute Duration Badge -->
+            <div class="row-thumb">
+              <img src="{{ item.thumb }}" alt="{{ item.title }}" loading="lazy">
+              <span class="duration-badge">{{ item.duration }}</span>
+            </div>
+
+            <!-- Stacked Alphanumeric Metadata Tags -->
+            <div class="metadata-stack">
+              <span class="row-title truncate-text" title="{{ item.title }}">{{ item.title }}</span>
+              <span class="row-channel truncate-text">{{ item.author }}</span>
+              <div class="row-tags-alphanumeric">
+                <span>{{ item.views }}</span>
+                {% for tag in item.tags %}
+                <span class="meta-chip-sm">{{ tag }}</span>
+                {% endfor %}
+              </div>
+            </div>
+          </li>
+          {% endfor %}
+        </ol>
+      </section>
+
+    </section>
+
+    <!-- ===================================================================
+         FIXED BOTTOM APPLICATION BAR (ASYMMETRIC FLOATING '+' ACTION)
+         =================================================================== -->
+    <nav class="fixed-bottom-bar" aria-label="Global application navigation">
+      <!-- Nav Item 1: Discovery Engine View -->
+      <button type="button" 
+              class="bottom-nav-item gpu-tap is-active" 
+              id="nav-btn-discovery" 
+              aria-label="Discovery View" 
+              onclick="switchView('discovery')">
+        <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
+        </svg>
+        <span>Discover</span>
+      </button>
+
+      <!-- Nav Item 2: Curated Spotlight Platform View -->
+      <button type="button" 
+              class="bottom-nav-item gpu-tap" 
+              id="nav-btn-spotlight" 
+              aria-label="Spotlight View" 
+              onclick="switchView('spotlight')">
+        <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z"/>
+        </svg>
+        <span>Spotlight</span>
+      </button>
+
+      <!-- Asymmetric Center Floating '+' Hub Action -->
+      <div class="hub-floating-container">
+        <button type="button" 
+                class="hub-floating-action gpu-tap" 
+                aria-label="Create stream or upload media broadcast" 
+                onclick="handleHubAction()">
+          <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Nav Item 3: Dynamic Media Hub & Feed View -->
+      <button type="button" 
+              class="bottom-nav-item gpu-tap" 
+              id="nav-btn-media" 
+              aria-label="Media Hub and Player View" 
+              onclick="switchView('media-feed')">
+        <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"/>
+        </svg>
+        <span>Playback</span>
+      </button>
+
+      <!-- Nav Item 4: User Library / Profile View -->
+      <button type="button" 
+              class="bottom-nav-item gpu-tap" 
+              id="nav-btn-profile" 
+              aria-label="Library View" 
+              onclick="alert('Library profile view')">
+        <svg aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <span>Account</span>
+      </button>
+    </nav>
+
+  </div>
+
+  <!-- Inline Lightweight Micro-Interactions Handler (Zero External Heavy Dependencies) -->
+  <script>
+    function switchView(viewName) {
+      const views = {
+        'discovery': document.getElementById('view-discovery'),
+        'spotlight': document.getElementById('view-spotlight'),
+        'media-feed': document.getElementById('view-media-feed')
+      };
+      const navButtons = {
+        'discovery': document.getElementById('nav-btn-discovery'),
+        'spotlight': document.getElementById('nav-btn-spotlight'),
+        'media-feed': document.getElementById('nav-btn-media')
+      };
+
+      Object.keys(views).forEach(key => {
+        if (views[key]) views[key].style.display = (key === viewName) ? 'block' : 'none';
+        if (navButtons[key]) {
+          if (key === viewName) {
+            navButtons[key].classList.add('is-active');
+          } else {
+            navButtons[key].classList.remove('is-active');
+          }
+        }
+      });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function handleCategorySelect(btn, category) {
+      document.querySelectorAll('.filter-pill').forEach(pill => {
+        pill.classList.remove('is-active');
+        pill.setAttribute('aria-selected', 'false');
+      });
+      btn.classList.add('is-active');
+      btn.setAttribute('aria-selected', 'true');
+    }
+
+    function handleLikeToggle(btn) {
+      const isPressed = btn.getAttribute('aria-pressed') === 'true';
+      btn.setAttribute('aria-pressed', (!isPressed).toString());
+      const counter = document.getElementById('like-metric-text');
+      if (counter) {
+        counter.textContent = isPressed ? '142K' : '143K';
+      }
+    }
+
+    function handleDislikeToggle(btn) {
+      const isPressed = btn.getAttribute('aria-pressed') === 'true';
+      btn.setAttribute('aria-pressed', (!isPressed).toString());
+      if (!isPressed) {
+        const likeBtn = document.getElementById('btn-like-action');
+        if (likeBtn && likeBtn.getAttribute('aria-pressed') === 'true') {
+          handleLikeToggle(likeBtn);
+        }
+      }
+    }
+
+    function handleClipAction(btn) {
+      const isPressed = btn.getAttribute('aria-pressed') === 'true';
+      btn.setAttribute('aria-pressed', (!isPressed).toString());
+      console.log('Snippet clip capture toggled:', !isPressed);
+    }
+
+    function handleFollowToggle(btn) {
+      const isFollowing = btn.getAttribute('aria-pressed') === 'true';
+      btn.setAttribute('aria-pressed', (!isFollowing).toString());
+      btn.textContent = isFollowing ? 'Subscribe' : 'Following';
+    }
+
+    function handleHubAction() {
+      console.log('Hub "+" action triggered: Open Studio Broadcast / Creator Flow');
+    }
+
+    function handleSearchClick() {
+      console.log('Search opened');
+    }
+
+    function handleNotificationClick() {
+      console.log('Notifications opened');
+    }
+
+    function handleShareAction() {
+      if (navigator.share) {
+        navigator.share({ title: document.title, url: window.location.href }).catch(() => {});
+      } else {
+        navigator.clipboard?.writeText(window.location.href);
+      }
+    }
+
+    function playSpotlightMedia() {
+      switchView('media-feed');
+      const video = document.getElementById('telapp-main-video');
+      if (video) video.play().catch(() => {});
+    }
+
+    function toggleWatchlist(btn) {
+      const span = btn.querySelector('span');
+      if (span) {
+        span.textContent = span.textContent === 'Watchlist' ? 'In Watchlist' : 'Watchlist';
+      }
+    }
+
+    function selectCurated(title) {
+      console.log('Selected curated item:', title);
+      switchView('media-feed');
+    }
+
+    function switchActiveMedia(id) {
+      console.log('Switch active media in queue:', id);
+      switchView('media-feed');
+    }
+
+    function toggleFullscreen() {
+      const video = document.getElementById('telapp-main-video');
+      if (!video) return;
+      if (!document.fullscreenElement) {
+        video.requestFullscreen?.() || video.webkitEnterFullscreen?.();
+      } else {
+        document.exitFullscreen?.();
+      }
+    }
+  </script>
+</body>
+</html>

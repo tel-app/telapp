@@ -1,0 +1,72 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Users Collection
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (
+        request.auth.uid == userId ||
+        // Allow other users to increment/decrement followers count
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['followersCount', 'followingCount'])
+      );
+      allow delete: if isOwner(userId);
+    }
+
+    // Posts Collection
+    match /posts/{postId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+      allow update: if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        // Allow like/comment/share metric counters to be updated atomically
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likesCount', 'commentsCount', 'sharesCount'])
+      );
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+
+      // Post Likes Subcollection
+      match /likes/{userId} {
+        allow read: if true;
+        allow create, delete: if isSignedIn() && request.auth.uid == userId;
+      }
+
+      // Post Comments Subcollection
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+        allow update, delete: if isSignedIn() && (
+          request.auth.uid == resource.data.userId ||
+          request.auth.uid == get(/databases/$(database)/documents/posts/$(postId)).data.userId
+        );
+      }
+    }
+
+    // Follows Collection
+    match /follows/{followId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.followerId;
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.followerId;
+    }
+
+    // Real-Time Direct Messages Collection
+    match /messages/{messageId} {
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.senderId ||
+        request.auth.uid == resource.data.receiverId
+      );
+      allow create: if isSignedIn() && request.auth.uid == request.resource.data.senderId;
+      allow update, delete: if isSignedIn() && request.auth.uid == resource.data.senderId;
+    }
+  }
+}

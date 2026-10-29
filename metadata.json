@@ -1,0 +1,6 @@
+{
+  "name": "TelApp - Mobile Video Streaming Platform",
+  "description": "Production-grade, scale-resilient presentation layer and mobile web platform for video streaming featuring Discovery Engine, Curated Spotlight, and Dynamic Media Hub.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

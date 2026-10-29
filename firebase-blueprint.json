@@ -1,0 +1,123 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile with Instagram-style handle and shiny gold verification status",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "description": "Firebase Auth UID" },
+        "email": { "type": "string", "format": "email", "description": "User email address" },
+        "username": { "type": "string", "minLength": 3, "maxLength": 30, "pattern": "^[a-z0-9_.]+$", "description": "Unique standard username handle" },
+        "displayName": { "type": "string", "maxLength": 60, "description": "Display name" },
+        "avatar": { "type": "string", "description": "Profile picture URL" },
+        "bio": { "type": "string", "maxLength": 200, "description": "User bio" },
+        "isGoldVerified": { "type": "boolean", "description": "Whether the user holds the unique shiny gold verification badge" },
+        "followersCount": { "type": "number", "description": "Count of followers" },
+        "followingCount": { "type": "number", "description": "Count of following users" },
+        "postsCount": { "type": "number", "description": "Total posts published" },
+        "createdAt": { "type": "string", "description": "Account registration timestamp" }
+      },
+      "required": ["uid", "email", "username", "createdAt"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "Short video reel or photo post in the Instagram streaming feed",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "description": "Author UID" },
+        "username": { "type": "string", "description": "Author standard username" },
+        "userAvatar": { "type": "string", "description": "Author avatar URL" },
+        "isGoldVerified": { "type": "boolean", "description": "Author shiny gold badge status" },
+        "videoUrl": { "type": "string", "description": "Video stream source or media asset" },
+        "thumbnailUrl": { "type": "string", "description": "Preview thumbnail image" },
+        "caption": { "type": "string", "maxLength": 500, "description": "Post caption with hashtags" },
+        "audioTrack": { "type": "string", "maxLength": 100, "description": "Background audio track title" },
+        "tags": { "type": "string", "description": "Comma separated hashtags" },
+        "likesCount": { "type": "number", "description": "Total real-time likes" },
+        "commentsCount": { "type": "number", "description": "Total real-time comments" },
+        "sharesCount": { "type": "number", "description": "Total shares count" },
+        "duration": { "type": "string", "description": "Video length display e.g. 0:45" },
+        "createdAt": { "type": "string", "description": "Post creation timestamp" }
+      },
+      "required": ["userId", "username", "videoUrl", "caption", "createdAt"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "Real-time comment on a post",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string", "description": "Referenced post ID" },
+        "userId": { "type": "string", "description": "Commenter UID" },
+        "username": { "type": "string", "description": "Commenter handle" },
+        "userAvatar": { "type": "string", "description": "Commenter avatar" },
+        "isGoldVerified": { "type": "boolean", "description": "Gold badge status" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 300, "description": "Comment content" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" }
+      },
+      "required": ["postId", "userId", "username", "text", "createdAt"]
+    },
+    "Like": {
+      "title": "Like",
+      "description": "User like record on a post",
+      "type": "object",
+      "properties": {
+        "postId": { "type": "string", "description": "Post ID" },
+        "userId": { "type": "string", "description": "Liking user UID" },
+        "createdAt": { "type": "string", "description": "Timestamp" }
+      },
+      "required": ["postId", "userId", "createdAt"]
+    },
+    "Follow": {
+      "title": "Follow",
+      "description": "Follower and following social graph edge",
+      "type": "object",
+      "properties": {
+        "followerId": { "type": "string", "description": "UID of user following" },
+        "targetId": { "type": "string", "description": "UID of user being followed" },
+        "createdAt": { "type": "string", "description": "Timestamp" }
+      },
+      "required": ["followerId", "targetId", "createdAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Real-time direct message between users",
+      "type": "object",
+      "properties": {
+        "conversationId": { "type": "string", "description": "Conversation thread identifier" },
+        "senderId": { "type": "string", "description": "Sender user UID" },
+        "senderName": { "type": "string", "description": "Sender username" },
+        "senderAvatar": { "type": "string", "description": "Sender avatar" },
+        "receiverId": { "type": "string", "description": "Receiver user UID" },
+        "text": { "type": "string", "minLength": 1, "maxLength": 1000, "description": "Message content" },
+        "createdAt": { "type": "string", "description": "Timestamp" }
+      },
+      "required": ["conversationId", "senderId", "receiverId", "text", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "User profiles indexed by UID"
+    },
+    "/posts/{postId}": {
+      "schema": { "$ref": "#/entities/Post" },
+      "description": "Instagram-style video reels and posts"
+    },
+    "/posts/{postId}/comments/{commentId}": {
+      "schema": { "$ref": "#/entities/Comment" },
+      "description": "Real-time comment threads on posts"
+    },
+    "/posts/{postId}/likes/{userId}": {
+      "schema": { "$ref": "#/entities/Like" },
+      "description": "Per-user like subcollection for atomic like toggles"
+    },
+    "/follows/{followId}": {
+      "schema": { "$ref": "#/entities/Follow" },
+      "description": "Follower graph edges for real-time counts"
+    },
+    "/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Real-time direct chat messages"
+    }
+  }
+}
