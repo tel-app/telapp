@@ -381,13 +381,13 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen bg-[#06050b] text-[#ffffff] flex flex-col items-center select-none font-sans">
+    <div className="min-h-[100dvh] w-full bg-[#06050b] text-[#ffffff] flex flex-col items-center select-none font-sans">
       
       {/* ===================================================================
           TELAPP MOBILE STREAMING VIEWPORT
           Instagram-style Real App with Firestore Live Sync & Gold Badge
           =================================================================== */}
-      <div className="relative w-full max-w-[440px] min-h-screen md:min-h-[880px] md:my-6 md:rounded-[40px] bg-[#0b0914] border border-[#a29bfe]/20 shadow-[0_25px_70px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden">
+      <div className="relative w-full max-w-[440px] min-h-[100dvh] md:min-h-[880px] md:my-6 md:rounded-[40px] bg-[#0b0914] border border-[#a29bfe]/20 shadow-[0_25px_70px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden">
         
         {/* =================================================================
             TOP APP HEADER
@@ -398,7 +398,7 @@ export default function App() {
           {/* Logo & 3D App Icon & Gold Status */}
           <div className="flex items-center gap-2">
             <img
-              src="/assets/aistudio/image_23f1ad3d.png"
+              src="/icons/icon-192.png"
               alt="TelApp Official App Icon"
               className="w-8 h-8 rounded-full object-cover shadow-[0_0_12px_rgba(108,92,231,0.6)] border border-[#a29bfe]/30 cursor-pointer gpu-tap"
               onClick={() => setActiveTab('feed')}
@@ -515,7 +515,7 @@ export default function App() {
               >
                 <div className="relative w-15 h-15 rounded-full p-[2px] border-2 border-dashed border-[#e84393] flex items-center justify-center">
                   <img
-                    src={currentUser?.avatar || '/assets/aistudio/image_23f1ad3d.png'}
+                    src={currentUser?.avatar || '/icons/icon-192.png'}
                     alt="Your avatar"
                     className="w-full h-full rounded-full object-cover"
                   />

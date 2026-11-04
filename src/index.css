@@ -41,6 +41,25 @@ body {
   background-color: #06050b;
   color: var(--text-primary);
   font-family: var(--font-stack);
+  min-width: 320px;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
+}
+
+html,
+#root {
+  min-height: 100%;
+  width: 100%;
+}
+
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
 }
 
 /* GPU-optimized micro-interactions */
@@ -143,4 +162,3 @@ body {
 .gold-badge-container {
   filter: drop-shadow(0 0 4px rgba(251, 191, 36, 0.45));
 }
-

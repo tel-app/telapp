@@ -352,7 +352,7 @@ export const AccountCenterModal: React.FC<AccountCenterModalProps> = ({
             <div className="p-3.5 rounded-2xl bg-[#0b0914] border border-[#a29bfe]/20 flex items-center justify-between">
               <div className="flex items-center gap-2.5">
                 <img
-                  src="/assets/aistudio/image_23f1ad3d.png"
+                  src="/icons/icon-192.png"
                   alt="TelApp App Icon"
                   className="w-9 h-9 rounded-xl shadow-md"
                 />
