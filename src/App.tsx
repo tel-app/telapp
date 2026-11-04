@@ -387,7 +387,7 @@ export default function App() {
           TELAPP MOBILE STREAMING VIEWPORT
           Instagram-style Real App with Firestore Live Sync & Gold Badge
           =================================================================== */}
-      <div className="relative w-full max-w-[440px] min-h-[100dvh] md:min-h-[880px] md:my-6 md:rounded-[40px] bg-[#0b0914] border border-[#a29bfe]/20 shadow-[0_25px_70px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden">
+      <div className="relative w-full min-h-[100dvh] bg-[#0b0914] flex flex-col overflow-hidden">
         
         {/* =================================================================
             TOP APP HEADER
@@ -1326,7 +1326,7 @@ export default function App() {
             FIXED BOTTOM APPLICATION BAR (ASYMMETRIC FLOATING '+' ACTION)
             ================================================================= */}
         <nav
-          className="fixed bottom-0 left-0 right-0 max-w-[440px] mx-auto h-16 bg-[#120e24]/90 backdrop-blur-2xl border-t border-[#a29bfe]/15 flex items-center justify-around px-2 z-40"
+          className="fixed bottom-0 left-0 right-0 w-full h-16 bg-[#120e24]/90 backdrop-blur-2xl border-t border-[#a29bfe]/15 flex items-center justify-around px-2 z-40"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0)' }}
           aria-label="Navigation Bar"
         >
