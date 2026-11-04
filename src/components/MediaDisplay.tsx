@@ -128,7 +128,7 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
           loop
           autoPlay={isPlaying}
           onError={() => setVideoError(true)}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-contain"
         />
       ) : thumbnailUrl && !imageError ? (
         /* 2. Image Thumbnail if Video Unavailable or Image Mode */
@@ -137,7 +137,7 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
           alt={caption || 'TelApp Media'}
           onError={() => setImageError(true)}
           loading="lazy"
-          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+          className="w-full h-full object-contain transition-transform duration-500 hover:scale-105"
         />
       ) : (
         /* 3. Graceful Elegant Fallback (No broken image icons!) */

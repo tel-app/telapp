@@ -699,7 +699,7 @@ export default function App() {
 
                       {/* Resilient Video Player Media Container with Graceful Fallback & Double-Tap Like Burst */}
                       <div 
-                        className="relative w-full aspect-video bg-black overflow-hidden flex items-center justify-center cursor-pointer group"
+                        className="relative w-full aspect-[9/13] md:aspect-[16/10] bg-black overflow-hidden flex items-center justify-center cursor-pointer group"
                       >
                         <MediaDisplay
                           videoUrl={post.videoUrl}
