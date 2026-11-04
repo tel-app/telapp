@@ -1,0 +1,18 @@
+# Apache/SakuraHost SPA fallback. Put this file beside index.html in public_html.
+Options -MultiViews
+RewriteEngine On
+RewriteBase /
+
+# Do not rewrite real files or directories.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Let React/Vite handle client-side routes.
+RewriteRule ^ index.html [L]
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|mjs|css|json|svg|png|jpg|jpeg|gif|webp|woff2?)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+</IfModule>
