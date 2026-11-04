@@ -503,7 +503,7 @@ export default function App() {
             VIEW 1: INSTAGRAM-STYLE REAL-TIME FEED (activeTab === 'feed')
             ================================================================= */}
         {activeTab === 'feed' && (
-          <div className="flex-1 pb-20 overflow-y-auto no-scrollbar">
+          <div className="flex-1 pb-20 overflow-y-auto no-scrollbar w-full max-w-[1024px] mx-auto">
             
             {/* Horizontal Stories Tray */}
             <div className="px-3 py-3 border-b border-[#a29bfe]/15 flex items-center gap-3 overflow-x-auto no-scrollbar">
@@ -852,7 +852,7 @@ export default function App() {
             VIEW 2: DISCOVERY ENGINE / EXPLORE (activeTab === 'discovery')
             ================================================================= */}
         {activeTab === 'discovery' && (
-          <div className="flex-1 pb-20 overflow-y-auto no-scrollbar">
+          <div className="flex-1 pb-20 overflow-y-auto no-scrollbar w-full max-w-[1024px] mx-auto">
             
             {/* Search Input Bar */}
             <div className="p-3 sticky top-0 z-30 bg-[#0b0914]/90 backdrop-blur-md">
@@ -977,7 +977,7 @@ export default function App() {
             VIEW 3: CURATED SPOTLIGHT PREMIERE (activeTab === 'spotlight')
             ================================================================= */}
         {activeTab === 'spotlight' && (
-          <div className="flex-1 pb-20 overflow-y-auto no-scrollbar">
+          <div className="flex-1 pb-20 overflow-y-auto no-scrollbar w-full max-w-[1024px] mx-auto">
             
             {posts.length === 0 ? (
               <div className="py-28 px-6 text-center flex flex-col items-center justify-center gap-4">
@@ -1115,7 +1115,7 @@ export default function App() {
             VIEW 4: USER PROFILE & SETTINGS (activeTab === 'profile')
             ================================================================= */}
         {activeTab === 'profile' && (
-          <div className="flex-1 pb-20 overflow-y-auto no-scrollbar text-left">
+          <div className="flex-1 pb-20 overflow-y-auto no-scrollbar text-left w-full max-w-[1024px] mx-auto">
             
             {currentUser ? (
               <div className="p-4 space-y-4">
