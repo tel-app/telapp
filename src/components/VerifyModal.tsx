@@ -279,11 +279,11 @@ export const VerifyModal: React.FC<VerifyModalProps> = ({
                 <div className="p-2.5 rounded-xl bg-[#16122c] border border-[#a29bfe]/15 flex items-center justify-between">
                   <div>
                     <span className="text-[10px] text-[#8b85b1] block">M-Pesa / Tigo Pesa / Airtel Money</span>
-                    <span className="font-mono text-white text-xs font-bold">+255 768 200 488</span>
+                    <span className="font-mono text-white text-xs font-bold">0621081728</span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => copyToClipboard('+255768200488', 'phone')}
+                    onClick={() => copyToClipboard('0621081728', 'phone')}
                     className="px-2.5 py-1 rounded-lg bg-[#211c42] hover:bg-[#6c5ce7] text-white text-[10px] flex items-center gap-1 transition-all"
                   >
                     {copiedPayment === 'phone' ? <Check className="w-3 h-3 text-[#2ed573]" /> : <Copy className="w-3 h-3" />}

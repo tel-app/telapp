@@ -1,9 +1,10 @@
 import React, { useState, useRef } from 'react';
 import { X, Upload, Video, Music, Tag, Sparkles, Check, Film, Play, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 import { collection, addDoc, doc, updateDoc, increment } from 'firebase/firestore';
-import { db, UserProfile } from '../lib/firebase';
+import { db, storage, UserProfile } from '../lib/firebase';
+import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import { GoldBadge } from './GoldBadge';
-import { saveMediaBlob, generateVideoThumbnail, generateImageThumbnail } from '../lib/mediaStorage';
+import { generateVideoThumbnail, generateImageThumbnail } from '../lib/mediaStorage';
 
 interface CreatePostModalProps {
   isOpen: boolean;
@@ -30,6 +31,8 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [isVideo, setIsVideo] = useState(true);
   const [rawFile, setRawFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoPreviewRef = useRef<HTMLVideoElement>(null);
@@ -39,7 +42,18 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setErrorMessage(null);
+    if (!file.type.startsWith('video/') && !file.type.startsWith('image/')) {
+      setErrorMessage('Please choose a video or image file.');
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      setErrorMessage('This file is larger than 100 MB. Choose a smaller video for faster upload.');
+      return;
+    }
+
     setRawFile(file);
+    setUploadProgress(0);
     setSelectedFileName(file.name);
     const isVideoFile = file.type.startsWith('video');
     setIsVideo(isVideoFile);
@@ -80,12 +94,22 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     }
 
     setIsSubmitting(true);
+    setErrorMessage(null);
+    setUploadProgress(0);
     try {
       let finalMediaUrl = '';
       if (mediaSourceType === 'upload' && rawFile) {
-        const mediaKey = `post_media_${Date.now()}`;
-        await saveMediaBlob(mediaKey, rawFile);
-        finalMediaUrl = `idb:${mediaKey}`;
+        const safeName = rawFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const storageRef = ref(storage, `posts/${currentUser.uid}/${Date.now()}-${safeName}`);
+        const uploadTask = uploadBytesResumable(storageRef, rawFile, { contentType: rawFile.type });
+        await new Promise<void>((resolve, reject) => {
+          uploadTask.on('state_changed',
+            snapshot => setUploadProgress(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)),
+            reject,
+            () => resolve()
+          );
+        });
+        finalMediaUrl = await getDownloadURL(uploadTask.snapshot.ref);
       } else {
         finalMediaUrl = mediaUrl.trim();
       }
@@ -124,9 +148,8 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       onPostCreated();
       onClose();
     } catch (err: any) {
-      console.info('Post creation notice (stored in local live feed):', err?.message);
-      onPostCreated();
-      onClose();
+      console.error('Reel upload error:', err);
+      setErrorMessage(err?.message || 'Upload failed. Check Firebase Storage rules and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -211,17 +234,17 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               />
 
               {mediaPreview ? (
-                <div className="relative rounded-2xl overflow-hidden aspect-video bg-black border border-[#6c5ce7] flex items-center justify-center group">
+                <div className="relative rounded-2xl overflow-hidden aspect-[9/13] bg-black border border-[#6c5ce7] flex items-center justify-center group">
                   {isVideo ? (
                     <video
                       ref={videoPreviewRef}
                       src={mediaPreview}
                       controls
                       playsInline
-                      className="w-full h-full object-cover"
+                      className="w-full h-full object-contain"
                     />
                   ) : (
-                    <img src={mediaPreview} alt="Upload preview" className="w-full h-full object-cover" />
+                    <img src={mediaPreview} alt="Upload preview" className="w-full h-full object-contain" />
                   )}
                   <button
                     type="button"
@@ -269,6 +292,19 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                   <video src={mediaUrl} controls className="w-full h-full object-cover" />
                 </div>
               )}
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="rounded-xl border border-[#ff4757]/40 bg-[#ff4757]/10 px-3 py-2 text-[11px] text-[#ffb3b8]">
+              {errorMessage}
+            </div>
+          )}
+
+          {isSubmitting && mediaSourceType === 'upload' && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-[10px] text-[#a29bfe]"><span>Uploading video…</span><span>{uploadProgress}%</span></div>
+              <div className="h-1.5 rounded-full bg-[#0b0914] overflow-hidden"><div className="h-full bg-gradient-to-r from-[#6c5ce7] to-[#e84393] transition-all" style={{ width: `${uploadProgress}%` }} /></div>
             </div>
           )}
 
@@ -322,7 +358,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           <div className="pt-2">
             <button
               type="submit"
-              disabled={!caption.trim() || !mediaUrl || isSubmitting}
+              disabled={!caption.trim() || (mediaSourceType === 'upload' ? !rawFile : !mediaUrl.trim()) || isSubmitting}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-[#6c5ce7] to-[#e84393] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#6c5ce7]/30 disabled:opacity-40 gpu-tap"
             >
               <span>{isSubmitting ? 'Uploading to Stream...' : 'Publish Reel to Feed'}</span>

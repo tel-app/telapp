@@ -1,8 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { X, Upload, Camera, Sparkles, Image as ImageIcon, Video, Check } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
-import { db, UserProfile, StoryItem } from '../lib/firebase';
-import { generateVideoThumbnail, generateImageThumbnail, saveMediaBlob } from '../lib/mediaStorage';
+import { db, storage, UserProfile, StoryItem } from '../lib/firebase';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { generateVideoThumbnail, generateImageThumbnail } from '../lib/mediaStorage';
 import { GoldBadge } from './GoldBadge';
 
 interface CreateStoryModalProps {
@@ -23,6 +24,7 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
   const [caption, setCaption] = useState('');
   const [isVideo, setIsVideo] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   if (!isOpen) return null;
@@ -30,6 +32,16 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    setErrorMessage(null);
+    if (!file.type.startsWith('video/') && !file.type.startsWith('image/')) {
+      setErrorMessage('Please choose a video or image file.');
+      return;
+    }
+    if (file.size > 100 * 1024 * 1024) {
+      setErrorMessage('This file is larger than 100 MB. Choose a smaller file.');
+      return;
+    }
 
     setSelectedFile(file);
     const isVid = file.type.startsWith('video');
@@ -49,17 +61,15 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
       let finalMediaUrl = '';
       let thumbUrl = '';
 
+      const safeName = selectedFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const storageRef = ref(storage, `stories/${currentUser.uid}/${Date.now()}-${safeName}`);
+      await uploadBytes(storageRef, selectedFile, { contentType: selectedFile.type });
+      finalMediaUrl = await getDownloadURL(storageRef);
       if (isVideo) {
-        // Save video blob in local IndexedDB
-        await saveMediaBlob(storyId, selectedFile);
-        finalMediaUrl = `idb:${storyId}`;
         const generated = await generateVideoThumbnail(selectedFile);
         thumbUrl = generated.thumbnailUrl;
       } else {
-        // Generate compressed image thumbnail for cross-device view
-        const imgThumb = await generateImageThumbnail(selectedFile);
-        finalMediaUrl = imgThumb;
-        thumbUrl = imgThumb;
+        thumbUrl = await generateImageThumbnail(selectedFile);
       }
 
       const now = new Date();
@@ -78,16 +88,13 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
         expiresAt: expires.toISOString()
       };
 
-      try {
-        await addDoc(collection(db, 'stories'), newStory);
-      } catch {
-        // Local fallback
-      }
+      await addDoc(collection(db, 'stories'), newStory);
 
       onStoryCreated(newStory);
       onClose();
     } catch (err: any) {
       console.error('Story upload error:', err);
+      setErrorMessage(err?.message || 'Story upload failed. Check Firebase Storage rules and try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -138,9 +145,9 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
           {filePreview ? (
             <div className="relative aspect-[9/16] max-h-[320px] mx-auto rounded-2xl overflow-hidden bg-black border border-[#6c5ce7] flex items-center justify-center group">
               {isVideo ? (
-                <video src={filePreview} autoPlay loop muted playsInline className="w-full h-full object-cover" />
+                <video src={filePreview} autoPlay loop muted playsInline className="w-full h-full object-contain" />
               ) : (
-                <img src={filePreview} alt="Story preview" className="w-full h-full object-cover" />
+                <img src={filePreview} alt="Story preview" className="w-full h-full object-contain" />
               )}
               <button
                 type="button"
@@ -160,6 +167,12 @@ export const CreateStoryModal: React.FC<CreateStoryModalProps> = ({
               </div>
               <span className="text-xs font-bold text-white block">Choose Photo or Video Story</span>
               <span className="text-[10px] text-[#8b85b1]">Supports gallery files, moments & clips</span>
+            </div>
+          )}
+
+          {errorMessage && (
+            <div className="rounded-xl border border-[#ff4757]/40 bg-[#ff4757]/10 px-3 py-2 text-[11px] text-[#ffb3b8]">
+              {errorMessage}
             </div>
           )}
 
