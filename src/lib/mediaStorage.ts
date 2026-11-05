@@ -65,6 +65,17 @@ export function generateVideoThumbnail(file: File): Promise<{ thumbnailUrl: stri
     video.playsInline = true;
 
     let durationStr = '0:15';
+    let settled = false;
+    const fallback = () => {
+      if (settled) return;
+      settled = true;
+      URL.revokeObjectURL(objectUrl);
+      resolve({
+        thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
+        duration: durationStr
+      });
+    };
+    const timeout = window.setTimeout(fallback, 2500);
 
     video.onloadedmetadata = () => {
       const secs = Math.floor(video.duration) || 15;
@@ -78,12 +89,15 @@ export function generateVideoThumbnail(file: File): Promise<{ thumbnailUrl: stri
       try {
         const canvas = document.createElement('canvas');
         // Compact resolution for efficient Firestore storage
-        canvas.width = 400;
-        canvas.height = 600;
+          canvas.width = 240;
+          canvas.height = 360;
         const ctx = canvas.getContext('2d');
         if (ctx) {
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
           const thumb = canvas.toDataURL('image/jpeg', 0.65);
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timeout);
           URL.revokeObjectURL(objectUrl);
           resolve({ thumbnailUrl: thumb, duration: durationStr });
           return;
@@ -91,19 +105,11 @@ export function generateVideoThumbnail(file: File): Promise<{ thumbnailUrl: stri
       } catch {
         // Fallback
       }
-      URL.revokeObjectURL(objectUrl);
-      resolve({
-        thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
-        duration: durationStr
-      });
+      fallback();
     };
 
     video.onerror = () => {
-      URL.revokeObjectURL(objectUrl);
-      resolve({
-        thumbnailUrl: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
-        duration: '0:15'
-      });
+      fallback();
     };
   });
 }

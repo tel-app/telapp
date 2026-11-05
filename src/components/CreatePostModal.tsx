@@ -64,15 +64,15 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
     const objectUrl = URL.createObjectURL(file);
     setMediaPreview(objectUrl);
+    const fallbackThumbnail = 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80';
+    setThumbnailUrl(fallbackThumbnail);
 
     if (isVideoFile) {
-      try {
-        const { thumbnailUrl: thumb, duration: dur } = await generateVideoThumbnail(file);
+      // Do not block the upload flow on codec/thumbnail processing.
+      generateVideoThumbnail(file).then(({ thumbnailUrl: thumb, duration: dur }) => {
         setThumbnailUrl(thumb);
         setDuration(dur);
-      } catch {
-        setThumbnailUrl('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80');
-      }
+      }).catch(() => undefined);
     } else {
       try {
         const thumb = await generateImageThumbnail(file);
