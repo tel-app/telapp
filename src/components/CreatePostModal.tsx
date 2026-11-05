@@ -86,7 +86,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!caption.trim() || isSubmitting) return;
+    if (isSubmitting) return;
 
     if (mediaSourceType === 'upload' && !rawFile) {
       alert('Please select a video file or photo to upload.');
@@ -136,7 +136,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
         isGoldVerified: currentUser.isGoldVerified || false,
         videoUrl: finalMediaUrl,
         thumbnailUrl: thumbnailUrl || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600&auto=format&fit=crop&q=80',
-        caption: caption.trim(),
+        caption: caption.trim() || 'Untitled reel',
         audioTrack: audioTrack.trim() || `Original Sound • @${currentUser.username}`,
         tags: parsedTags.length > 0 ? parsedTags : ['Reels'],
         likesCount: 0,
@@ -327,7 +327,6 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               Caption
             </label>
             <textarea
-              required
               rows={3}
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
@@ -371,7 +370,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
           <div className="pt-2">
             <button
               type="submit"
-              disabled={!caption.trim() || (mediaSourceType === 'upload' ? !rawFile : !mediaUrl.trim()) || isSubmitting}
+              disabled={(mediaSourceType === 'upload' ? !rawFile : !mediaUrl.trim()) || isSubmitting}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-[#6c5ce7] to-[#e84393] text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-[#6c5ce7]/30 disabled:opacity-40 gpu-tap"
             >
               <span>{isSubmitting ? 'Uploading to Stream...' : 'Publish Reel to Feed'}</span>
