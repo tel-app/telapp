@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { X, Upload, Video, Music, Tag, Sparkles, Check, Film, Play, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 import { collection, addDoc, doc, updateDoc, increment } from 'firebase/firestore';
-import { db, storage, UserProfile } from '../lib/firebase';
+import { auth, db, storage, UserProfile } from '../lib/firebase';
 import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
 import { GoldBadge } from './GoldBadge';
 import { generateVideoThumbnail, generateImageThumbnail } from '../lib/mediaStorage';
@@ -45,8 +45,10 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     if (!file) return;
 
     setErrorMessage(null);
-    if (!file.type.startsWith('video/') && !file.type.startsWith('image/')) {
-      setErrorMessage('Please choose a video or image file.');
+    const extension = file.name.split('.').pop()?.toLowerCase() || '';
+    const inferredType = file.type || (['mp4', 'mov', 'm4v', 'webm', 'avi', 'mkv'].includes(extension) ? 'video/mp4' : 'image/jpeg');
+    if (!inferredType.startsWith('video/') && !inferredType.startsWith('image/')) {
+      setErrorMessage('Please choose a video or image file (MP4, MOV, WebM, JPG, PNG, or WebP).');
       return;
     }
     if (file.size > 100 * 1024 * 1024) {
@@ -57,7 +59,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     setRawFile(file);
     setUploadProgress(0);
     setSelectedFileName(file.name);
-    const isVideoFile = file.type.startsWith('video');
+    const isVideoFile = inferredType.startsWith('video/');
     setIsVideo(isVideoFile);
 
     const objectUrl = URL.createObjectURL(file);
@@ -99,15 +101,24 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     setErrorMessage(null);
     setUploadProgress(0);
     try {
+      if (!auth.currentUser || auth.currentUser.uid !== currentUser.uid) {
+        throw new Error('Your sign-in session expired. Please sign in again before uploading a reel.');
+      }
       let finalMediaUrl = '';
       if (mediaSourceType === 'upload' && rawFile) {
         const safeName = rawFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
         const storageRef = ref(storage, `posts/${currentUser.uid}/${Date.now()}-${safeName}`);
-        const uploadTask = uploadBytesResumable(storageRef, rawFile, { contentType: rawFile.type });
+        const extension = rawFile.name.split('.').pop()?.toLowerCase() || '';
+        const contentType = rawFile.type || (['mp4', 'mov', 'm4v', 'webm', 'avi', 'mkv'].includes(extension) ? 'video/mp4' : 'image/jpeg');
+        const uploadTask = uploadBytesResumable(storageRef, rawFile, { contentType });
         await new Promise<void>((resolve, reject) => {
           uploadTask.on('state_changed',
             snapshot => setUploadProgress(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)),
-            reject,
+            error => reject(new Error(error.code === 'storage/unauthorized'
+              ? 'Firebase Storage rejected this upload. Publish storage.rules and sign in again.'
+              : error.code === 'storage/quota-exceeded'
+                ? 'Firebase Storage quota was exceeded. Try a smaller file.'
+                : error.message || 'Firebase Storage upload failed.')),
             () => resolve()
           );
         });
@@ -151,7 +162,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       onClose();
     } catch (err: any) {
       console.error('Reel upload error:', err);
-      setErrorMessage(err?.message || 'Upload failed. Check Firebase Storage rules and try again.');
+      setErrorMessage(err?.message || 'Upload failed. Check your connection and Firebase Storage rules, then try again.');
     } finally {
       setIsSubmitting(false);
     }
