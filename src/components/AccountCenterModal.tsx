@@ -16,10 +16,12 @@ import {
   ChevronRight,
   Edit3,
   Save,
-  AlertCircle
+  AlertCircle,
+  Upload
 } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
-import { db, UserProfile } from '../lib/firebase';
+import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
+import { db, storage, UserProfile } from '../lib/firebase';
 import { GoldBadge } from './GoldBadge';
 import { getSavedAccounts, saveAccountToSessions, removeAccountFromSessions } from '../lib/accountSessions';
 
@@ -54,6 +56,8 @@ export const AccountCenterModal: React.FC<AccountCenterModalProps> = ({
   const [savedAccounts, setSavedAccounts] = useState<UserProfile[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [avatarUploadProgress, setAvatarUploadProgress] = useState(0);
+  const avatarInputRef = React.useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -122,6 +126,35 @@ export const AccountCenterModal: React.FC<AccountCenterModalProps> = ({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleAvatarSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setSaveMessage('Please choose an image file.');
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setSaveMessage('Profile pictures must be smaller than 10 MB.');
+      return;
+    }
+    setAvatarUploadProgress(1);
+    const uploadTask = uploadBytesResumable(
+      ref(storage, `avatars/${currentUser.uid}/${Date.now()}-${file.name}`),
+      file,
+      { contentType: file.type }
+    );
+    uploadTask.on('state_changed',
+      snapshot => setAvatarUploadProgress(Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100)),
+      () => { setAvatarUploadProgress(0); setSaveMessage('Profile picture upload failed. Check Firebase Storage rules.'); },
+      async () => {
+        const url = await getDownloadURL(uploadTask.snapshot.ref);
+        setAvatar(url);
+        setAvatarUploadProgress(100);
+        setSaveMessage('Profile picture uploaded. Click Save Profile Changes.');
+      }
+    );
   };
 
   // Handle Switch to Another Account
@@ -463,6 +496,27 @@ export const AccountCenterModal: React.FC<AccountCenterModalProps> = ({
               <label className="text-[11px] font-semibold text-[#a29bfe] block mb-1">
                 Avatar Image URL
               </label>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp,image/gif"
+                onChange={handleAvatarSelected}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                className="w-full mb-2 py-2.5 rounded-xl bg-[#211c42] border border-[#a29bfe]/25 text-white text-xs font-bold flex items-center justify-center gap-2 hover:border-[#6c5ce7]"
+              >
+                <Upload className="w-4 h-4 text-[#e84393]" />
+                <span>Choose Profile Picture</span>
+              </button>
+              {avatarUploadProgress > 0 && avatarUploadProgress < 100 && (
+                <div className="mb-2">
+                  <div className="flex justify-between text-[10px] text-[#8b85b1] mb-1"><span>Uploading profile picture</span><span>{avatarUploadProgress}%</span></div>
+                  <div className="h-1.5 rounded-full bg-[#0b0914] overflow-hidden"><div className="h-full bg-gradient-to-r from-[#6c5ce7] to-[#e84393]" style={{ width: `${avatarUploadProgress}%` }} /></div>
+                </div>
+              )}
               <input
                 type="url"
                 value={avatar}
