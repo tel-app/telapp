@@ -11,21 +11,23 @@ interface CreatePostModalProps {
   onClose: () => void;
   currentUser: UserProfile;
   onPostCreated: () => void;
+  defaults?: { description?: string; tags?: string[]; audioTrack?: string };
 }
 
 export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   isOpen,
   onClose,
   currentUser,
-  onPostCreated
+  onPostCreated,
+  defaults
 }) => {
-  const [caption, setCaption] = useState('');
-  const [audioTrack, setAudioTrack] = useState(`Original Sound • @${currentUser?.username || 'user'}`);
+  const [caption, setCaption] = useState(defaults?.description || '');
+  const [audioTrack, setAudioTrack] = useState(defaults?.audioTrack || `Original Sound • @${currentUser?.username || 'user'}`);
   const [mediaSourceType, setMediaSourceType] = useState<'upload' | 'url'>('upload');
   const [mediaUrl, setMediaUrl] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [duration, setDuration] = useState('0:15');
-  const [tags, setTags] = useState('reels, stream, viral');
+  const [tags, setTags] = useState(defaults?.tags?.join(', ') || 'reels, stream, viral');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedFileName, setSelectedFileName] = useState<string | null>(null);
   const [mediaPreview, setMediaPreview] = useState<string | null>(null);

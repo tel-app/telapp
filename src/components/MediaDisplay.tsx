@@ -14,6 +14,8 @@ interface MediaDisplayProps {
   aspectRatio?: 'portrait' | 'square' | 'video';
   onClick?: () => void;
   onDoubleTap?: () => void;
+  initialTime?: number;
+  onTimeUpdate?: (seconds: number) => void;
 }
 
 export const MediaDisplay: React.FC<MediaDisplayProps> = ({
@@ -27,7 +29,9 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
   className = '',
   aspectRatio = 'portrait',
   onClick,
-  onDoubleTap
+  onDoubleTap,
+  initialTime = 0,
+  onTimeUpdate
 }) => {
   const [resolvedVideoSrc, setResolvedVideoSrc] = useState<string | null>(null);
   const [videoError, setVideoError] = useState(false);
@@ -127,6 +131,12 @@ export const MediaDisplay: React.FC<MediaDisplayProps> = ({
           playsInline
           loop
           autoPlay={isPlaying}
+          onLoadedMetadata={(event) => {
+            if (initialTime > 0 && Number.isFinite(initialTime)) {
+              event.currentTarget.currentTime = initialTime;
+            }
+          }}
+          onTimeUpdate={(event) => onTimeUpdate?.(event.currentTarget.currentTime)}
           onError={() => setVideoError(true)}
           className="w-full h-full object-contain"
         />

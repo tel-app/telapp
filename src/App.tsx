@@ -61,6 +61,7 @@ import { EditPostModal } from './components/EditPostModal';
 import { CreateStoryModal } from './components/CreateStoryModal';
 import { StoryViewerModal } from './components/StoryViewerModal';
 import { MediaDisplay } from './components/MediaDisplay';
+import { CreatorHubModal } from './components/CreatorHubModal';
 import { saveAccountToSessions, getSavedAccounts } from './lib/accountSessions';
 
 export default function App() {
@@ -93,6 +94,14 @@ export default function App() {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatTargetUser, setChatTargetUser] = useState<{ uid: string; username: string; avatar: string; isGoldVerified: boolean } | null>(null);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isCreatorHubOpen, setIsCreatorHubOpen] = useState(false);
+  const [userInterests, setUserInterests] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('telapp_interests') || '[]'); } catch { return []; }
+  });
+  const [studioDefaults, setStudioDefaults] = useState({ description: '', tags: [] as string[], audioTrack: 'Original Sound' });
+  const [watchPositions, setWatchPositions] = useState<Record<string, number>>(() => {
+    try { return JSON.parse(localStorage.getItem('telapp_watch_positions') || '{}'); } catch { return {}; }
+  });
 
   // Interactive Playback State
   const [isMuted, setIsMuted] = useState(true);
@@ -116,6 +125,21 @@ export default function App() {
   const triggerToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 2500);
+  };
+
+  const saveWatchPosition = (postId: string, seconds: number) => {
+    if (!Number.isFinite(seconds) || seconds <= 0) return;
+    setWatchPositions(prev => {
+      const next = { ...prev, [postId]: seconds };
+      try { localStorage.setItem('telapp_watch_positions', JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  const saveInterests = (next: string[]) => {
+    setUserInterests(next);
+    try { localStorage.setItem('telapp_interests', JSON.stringify(next)); } catch { /* ignore */ }
+    triggerToast(next.length ? 'For You recommendations updated' : 'Showing all interests');
   };
 
   // 1. Firebase Auth Listener
@@ -371,6 +395,22 @@ export default function App() {
     setSavedPostIds(nextSaved);
   };
 
+  const handleRepost = (post: PostItem) => {
+    if (!currentUser) {
+      setIsAuthOpen(true);
+      return;
+    }
+    const key = `telapp_reposts_${currentUser.uid}`;
+    try {
+      const existing = JSON.parse(localStorage.getItem(key) || '[]') as string[];
+      const next = existing.includes(post.id) ? existing.filter(id => id !== post.id) : [...existing, post.id];
+      localStorage.setItem(key, JSON.stringify(next));
+      triggerToast(existing.includes(post.id) ? 'Repost removed' : `Reposted @${post.username}'s video`);
+    } catch {
+      triggerToast('Repost saved for this session');
+    }
+  };
+
   // Filtered Posts for Discovery Engine
   const filteredPosts = posts.filter(p => {
     const matchCategory = selectedCategory === 'All' || p.tags.includes(selectedCategory);
@@ -378,6 +418,14 @@ export default function App() {
       p.caption.toLowerCase().includes(searchQuery.toLowerCase()) || 
       p.username.toLowerCase().includes(searchQuery.toLowerCase());
     return matchCategory && matchSearch;
+  });
+
+  const recommendedPosts = [...posts].sort((a, b) => {
+    const score = (post: PostItem) => {
+      const interestScore = userInterests.length ? post.tags.filter(tag => userInterests.includes(tag)).length * 100 : 0;
+      return interestScore + post.likesCount + post.commentsCount * 2 + post.sharesCount * 3;
+    };
+    return score(b) - score(a);
   });
 
   return (
@@ -503,7 +551,7 @@ export default function App() {
             VIEW 1: INSTAGRAM-STYLE REAL-TIME FEED (activeTab === 'feed')
             ================================================================= */}
         {activeTab === 'feed' && (
-          <div className="flex-1 pb-20 overflow-y-auto no-scrollbar w-full max-w-[1024px] mx-auto">
+          <div className="flex-1 pb-20 overflow-y-auto no-scrollbar w-full max-w-[1024px] mx-auto snap-y snap-mandatory" style={{ scrollSnapType: 'y mandatory' }}>
             
             {/* Horizontal Stories Tray */}
             <div className="px-3 py-3 border-b border-[#a29bfe]/15 flex items-center gap-3 overflow-x-auto no-scrollbar">
@@ -610,13 +658,13 @@ export default function App() {
               </div>
             ) : (
               <div className="divide-y divide-[#a29bfe]/15">
-                {posts.map(post => {
+                {recommendedPosts.map(post => {
                   const isPostLiked = likedPostIds.has(post.id);
                   const isPostSaved = savedPostIds.has(post.id);
                   const isAuthorFollowed = followedUserIds.has(post.userId);
 
                   return (
-                    <article key={post.id} className="py-3 flex flex-col bg-[#0b0914]">
+                    <article key={post.id} className="py-3 flex flex-col bg-[#0b0914] snap-start">
                       
                       {/* Post Header: User info, Gold verification badge, Follow button */}
                       <div className="px-4 py-2 flex items-center justify-between">
@@ -709,6 +757,8 @@ export default function App() {
                           audioTrack={post.audioTrack}
                           isPlaying={playingVideoId === post.id}
                           isMuted={isMuted}
+                          initialTime={watchPositions[post.id] || 0}
+                          onTimeUpdate={(seconds) => saveWatchPosition(post.id, seconds)}
                           onClick={() => setPlayingVideoId(playingVideoId === post.id ? null : post.id)}
                           onDoubleTap={() => handleToggleLike(post)}
                           className="w-full h-full"
@@ -788,6 +838,13 @@ export default function App() {
                             aria-label="Share reel to WhatsApp, Twitter, or apps"
                           >
                             <Share2 className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => handleRepost(post)}
+                            className="text-white hover:text-[#2ed573] gpu-tap"
+                            aria-label="Repost video"
+                          >
+                            <TrendingUp className="w-5 h-5" />
                           </button>
                         </div>
 
@@ -1227,14 +1284,21 @@ export default function App() {
                   </span>
                 </div>
 
-                {/* Profile Actions: Upload Reel, Add Story, Account Center */}
-                <div className="grid grid-cols-3 gap-2">
+                {/* Profile Actions: Upload Reel, Creator Hub, Add Story, Account Center */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   <button
                     onClick={() => setIsCreateOpen(true)}
                     className="py-2 rounded-xl bg-gradient-to-r from-[#6c5ce7] to-[#e84393] text-white text-[11px] font-bold flex items-center justify-center gap-1 shadow-md gpu-tap"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Upload Reel</span>
+                  </button>
+                  <button
+                    onClick={() => setIsCreatorHubOpen(true)}
+                    className="py-2 rounded-xl bg-[#211c42] border border-[#a29bfe]/30 text-white text-[11px] font-semibold flex items-center justify-center gap-1 gpu-tap"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-[#ffd700]" />
+                    <span>Creator Hub</span>
                   </button>
                   <button
                     onClick={() => setIsCreateStoryOpen(true)}
@@ -1476,6 +1540,7 @@ export default function App() {
           isOpen={isCreateOpen}
           onClose={() => setIsCreateOpen(false)}
           currentUser={currentUser}
+          defaults={studioDefaults}
           onPostCreated={() => {
             triggerToast('Reel published to live feed in real-time!');
             setActiveTab('feed');
@@ -1495,6 +1560,21 @@ export default function App() {
           }}
         />
       )}
+
+      <CreatorHubModal
+        isOpen={isCreatorHubOpen}
+        onClose={() => setIsCreatorHubOpen(false)}
+        posts={posts}
+        interests={userInterests}
+        onSaveInterests={saveInterests}
+        onApplyStudio={(result) => {
+          setStudioDefaults(result);
+          setIsCreatorHubOpen(false);
+          if (currentUser) setIsCreateOpen(true);
+          else setIsAuthOpen(true);
+          triggerToast('Creator Studio settings ready for your next reel');
+        }}
+      />
 
       {/* 7. Full-Screen Story Viewer Modal */}
       <StoryViewerModal
